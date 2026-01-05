@@ -27,6 +27,8 @@
 
     <div id="loading-screen" class="container">
         <p class="loading">アプリを起動中...</p>
+        <p style="font-size:12px; color:#999;">※5秒以上動かない場合は<br>下のボタンを押してください</p>
+        <button class="main-btn" style="background:#ccc; width:auto;" onclick="showScreen('auth')">ログイン画面へ</button>
     </div>
 
     <div id="auth-screen" class="container hidden">
@@ -35,8 +37,7 @@
         <input type="password" id="pass" placeholder="パスワード">
         <button class="main-btn" onclick="login()">ログイン</button>
         <button class="main-btn" style="background:#66cc99;" onclick="register()">新規登録</button>
-        <p style="font-size:12px; color:#666; margin-top:10px;">※新規登録時は名前を入力してください</p>
-        <input type="text" id="reg-name" placeholder="（新規用）ユーザー名">
+        <input type="text" id="reg-name" placeholder="（新規用）ユーザー名" style="margin-top:20px;">
     </div>
 
     <div id="home-screen" class="container hidden">
@@ -69,7 +70,6 @@
 
     <div id="trash-screen" class="container hidden">
         <h2>ゴミ箱</h2>
-        <p style="font-size:12px;">30日以内に復元可能です</p>
         <div id="trash-list"></div>
         <button class="main-btn" onclick="showScreen('deck')">戻る</button>
     </div>
@@ -96,17 +96,24 @@
         let currentCards = [];
         let cardIdx = 0;
 
-        // ★ ログイン状態を自動監視する「心臓部」
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const doc = await db.collection("users").doc(user.uid).get();
-                if (doc.exists) {
-                    document.getElementById('u-name').innerText = doc.data().username;
-                    showScreen('home');
-                }
-            } else {
+        // ★ 安全装置：5秒経っても動かなければ強制的にログイン画面へ
+        const safetyTimer = setTimeout(() => {
+            if(!document.getElementById('loading-screen').classList.contains('hidden')) {
                 showScreen('auth');
             }
+        }, 5000);
+
+        auth.onAuthStateChanged(async (user) => {
+            clearTimeout(safetyTimer); // 正常に動いたらタイマー解除
+            try {
+                if (user) {
+                    const doc = await db.collection("users").doc(user.uid).get();
+                    if (doc.exists) {
+                        document.getElementById('u-name').innerText = doc.data().username;
+                        showScreen('home');
+                    } else { showScreen('auth'); }
+                } else { showScreen('auth'); }
+            } catch (e) { showScreen('auth'); }
         });
 
         function showScreen(id) {
@@ -119,7 +126,7 @@
         async function login() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("ログイン失敗: パスワード等を確認してください"); }
+            try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("ログイン失敗"); }
         }
 
         async function register() {
@@ -131,12 +138,11 @@
                 const res = await auth.createUserWithEmailAndPassword(email, pass);
                 await db.collection("users").doc(res.user.uid).set({ username: name, email: email });
                 alert("登録成功！");
-            } catch (e) { alert("登録失敗: " + e.message); }
+            } catch (e) { alert("登録失敗"); }
         }
 
-        function logout() { auth.signOut(); }
+        function logout() { auth.signOut().then(() => location.reload()); }
 
-        // --- ジャンル ---
         async function addDeck() {
             const name = document.getElementById('new-deck').value;
             if(!name) return;
@@ -152,3 +158,86 @@
             list.innerHTML = "";
             snap.forEach(doc => {
                 const div = document.createElement('div');
+                div.className = "item-row";
+                div.innerHTML = `<span onclick="openDeck('${doc.id}', '${doc.data().name}')" style="flex:1; text-align:left;">📂 ${doc.data().name}</span>
+                                 <button class="main-btn del-btn" onclick="trashDeck('${doc.id}')">削除</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        async function trashDeck(id) {
+            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(id).update({ deleted: true, deletedAt: new Date() });
+            loadDecks();
+        }
+
+        async function loadTrash() {
+            const list = document.getElementById('trash-list');
+            list.innerHTML = "";
+            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").where("deleted", "==", true).get();
+            snap.forEach(doc => {
+                const div = document.createElement('div');
+                div.className = "item-row";
+                div.innerHTML = `<span>${doc.data().name}</span>
+                                 <button class="main-btn" style="background:green; width:auto; padding:5px;" onclick="restoreDeck('${doc.id}')">復元</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        async function restoreDeck(id) {
+            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(id).update({ deleted: false });
+            loadTrash();
+        }
+
+        function openDeck(id, name) {
+            curDeckId = id;
+            document.getElementById('current-deck-name').innerText = name;
+            showScreen('card');
+            loadCards();
+        }
+
+        async function addCard() {
+            const word = document.getElementById('word').value;
+            const mean = document.getElementById('mean').value;
+            if(!word || !mean) return;
+            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").add({ word, mean, createdAt: new Date() });
+            document.getElementById('word').value = "";
+            document.getElementById('mean').value = "";
+            loadCards();
+        }
+
+        async function loadCards() {
+            const list = document.getElementById('card-list');
+            list.innerHTML = "";
+            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").orderBy("createdAt", "asc").get();
+            currentCards = [];
+            snap.forEach(doc => {
+                currentCards.push(doc.data());
+                const div = document.createElement('div');
+                div.className = "item-row";
+                div.innerHTML = `<span style="font-size:14px;">${doc.data().word} / ${doc.data().mean}</span>
+                                 <button class="main-btn del-btn" onclick="deleteCard('${doc.id}')">消去</button>`;
+                list.appendChild(div);
+            });
+            cardIdx = 0;
+            updateCardDisplay();
+        }
+
+        async function deleteCard(id) {
+            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").doc(id).delete();
+            loadCards();
+        }
+
+        function updateCardDisplay() {
+            isFlipped = false;
+            const display = document.getElementById('card-text');
+            if(currentCards.length > 0) { display.innerText = currentCards[cardIdx].word; } else { display.innerText = "カードなし"; }
+        }
+
+        function flip() {
+            if(currentCards.length === 0) return;
+            isFlipped = !isFlipped;
+            document.getElementById('card-text').innerText = isFlipped ? currentCards[cardIdx].mean : currentCards[cardIdx].word;
+        }
+    </script>
+</body>
+</html>
