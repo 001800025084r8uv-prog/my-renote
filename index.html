@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Re:note</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #fff; color: #333; }
+        body { font-family: sans-serif; margin: 0; background: #fff; }
         .header { background: linear-gradient(to bottom, #ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; border-bottom-left-radius: 50% 20px; border-bottom-right-radius: 50% 20px; }
         .container { padding: 20px; text-align: center; }
         .hidden { display: none !important; }
         input { display: block; width: 85%; margin: 10px auto; padding: 14px; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; }
         .main-btn { padding: 14px; background: #6699cc; color: white; border: none; border-radius: 10px; cursor: pointer; margin: 8px auto; font-size: 16px; width: 90%; font-weight: bold; }
         .tile-orange { background: #fff4e6; border: 2px solid #ff9933; color: #ff9933; padding: 30px; border-radius: 15px; font-size: 20px; margin-top: 20px; font-weight: bold; }
-        .deck-item { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 10px; border-left: 5px solid #ff9933; text-align: left; font-weight: bold; }
-        #status-bar { font-size: 10px; color: #66cc99; background: #f0f0f0; padding: 5px; text-align: center; }
+        #error-display { background: #ffeded; color: #d00; padding: 10px; margin: 10px; border-radius: 10px; font-size: 12px; display: none; }
     </style>
 </head>
 <body>
@@ -22,21 +21,21 @@
         <div style="font-size:22px; font-weight:bold;">My Re:note</div>
         <div onclick="location.reload()" style="cursor:pointer; font-size:20px;">🏠</div>
     </div>
-    <div id="status-bar">準備中...</div>
+
+    <div id="error-display"></div>
 
     <div id="loading-screen" class="container">
-        <p style="margin-top:100px;">データを読み込んでいます...</p>
+        <p style="margin-top:100px;">読み込み中...</p>
     </div>
 
     <div id="auth-screen" class="container hidden">
         <h2>ログイン / 新規登録</h2>
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pass" placeholder="パスワード">
-        <button class="main-btn" onclick="handleLogin()">ログインする</button>
+        <button class="main-btn" id="login-btn">ログインする</button>
         <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-        <p style="font-size:14px; color:#666;">初めての方はこちら</p>
-        <input type="text" id="reg-name" placeholder="ユーザー名（ニックネーム）">
-        <button class="main-btn" style="background:#66cc99;" onclick="handleRegister()">新しくアカウントを作る</button>
+        <input type="text" id="reg-name" placeholder="ユーザーネーム">
+        <button class="main-btn" style="background:#66cc99;" id="reg-btn">新しくアカウントを作る</button>
     </div>
 
     <div id="home-screen" class="container hidden">
@@ -47,8 +46,8 @@
 
     <div id="deck-screen" class="container hidden">
         <h2>📖 ジャンル一覧</h2>
-        <input type="text" id="new-deck" placeholder="ジャンル名（例：歴史、英単語）">
-        <button class="main-btn" id="add-btn" onclick="handleAddDeck()">＋ ジャンルを作成</button>
+        <input type="text" id="new-deck" placeholder="ジャンル名">
+        <button class="main-btn" onclick="handleAddDeck()">＋ 追加する</button>
         <div id="deck-list" style="margin-top:20px;"></div>
         <button class="main-btn" style="background:#999;" onclick="showScreen('home')">戻る</button>
     </div>
@@ -58,7 +57,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
     <script>
-        // 画像（IMG_9638.jpg）から確認したあなたの正しい設定値
+        function logError(msg) {
+            const el = document.getElementById('error-display');
+            el.innerText = msg;
+            el.style.display = "block";
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyAqOQcttYS7zpy2aMbRWVlDYVUQb5S28XM",
             authDomain: "re-note-f83a1.firebaseapp.com",
@@ -68,124 +72,70 @@
             appId: "1:296038093171:web:e5a31640dbbd23d9397506"
         };
 
-        // Firebase初期化
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        try {
+            firebase.initializeApp(firebaseConfig);
+            var auth = firebase.auth();
+            var db = firebase.firestore();
+        } catch (e) { logError("Firebase初期化失敗: " + e.message); }
 
-        // ログイン状態のチェック
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                document.getElementById('status-bar').innerText = "ログイン中: " + user.email;
-                try {
-                    const doc = await db.collection("users").doc(user.uid).get();
-                    if (doc.exists) {
-                        document.getElementById('u-name').innerText = doc.data().username;
-                        showScreen('home');
-                    } else {
-                        // ユーザーデータがない場合は登録画面へ
-                        showScreen('auth');
-                    }
-                } catch (e) {
-                    console.error(e);
-                    showScreen('auth');
-                }
-            } else {
-                document.getElementById('status-bar').innerText = "未ログイン";
-                showScreen('auth');
-            }
+                const doc = await db.collection("users").doc(user.uid).get();
+                if (doc.exists) {
+                    document.getElementById('u-name').innerText = doc.data().username;
+                    showScreen('home');
+                } else { showScreen('auth'); }
+            } else { showScreen('auth'); }
         });
 
-        // 画面切り替え
         function showScreen(id) {
-            ['loading','auth','home','deck'].forEach(s => {
-                document.getElementById(s+'-screen').classList.add('hidden');
-            });
+            ['loading','auth','home','deck'].forEach(s => document.getElementById(s+'-screen').classList.add('hidden'));
             document.getElementById(id+'-screen').classList.remove('hidden');
             if(id === 'deck') loadDecks();
         }
 
-        // ログイン処理
-        async function handleLogin() {
+        // ボタンのクリックを確実に拾うための書き方
+        document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            if(!email || !pass) return alert("メールとパスワードを入力してね");
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
-            } catch (e) {
-                alert("ログイン失敗: " + e.message);
-            }
-        }
+            } catch (e) { logError("ログイン失敗: " + e.message); }
+        });
 
-        // 新規登録処理
-        async function handleRegister() {
+        document.getElementById('reg-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
             const name = document.getElementById('reg-name').value;
-            if(!email || !pass || !name) return alert("全部入力してね");
             try {
                 const res = await auth.createUserWithEmailAndPassword(email, pass);
-                // Firestoreにユーザー名を保存
-                await db.collection("users").doc(res.user.uid).set({
-                    username: name,
-                    email: email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                alert("登録完了！");
-            } catch (e) {
-                alert("登録失敗: " + e.message);
-            }
-        }
+                await db.collection("users").doc(res.user.uid).set({ username: name, email: email });
+                alert("登録成功！");
+            } catch (e) { logError("登録失敗: " + e.message); }
+        });
 
-        // ジャンル追加処理
         async function handleAddDeck() {
             const name = document.getElementById('new-deck').value;
-            if(!name) return;
-            const btn = document.getElementById('add-btn');
-            btn.innerText = "保存中...";
             try {
-                await db.collection("users").doc(auth.currentUser.uid).collection("decks").add({
-                    name: name,
-                    deleted: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                await db.collection("users").doc(auth.currentUser.uid).collection("decks").add({ name, deleted: false, createdAt: new Date() });
                 document.getElementById('new-deck').value = "";
                 loadDecks();
-            } catch (e) {
-                alert("追加に失敗しました。ルールの設定を確認してください。");
-            }
-            btn.innerText = "＋ ジャンルを作成";
+            } catch (e) { logError("追加失敗: " + e.message); }
         }
 
-        // ジャンル一覧読み込み
         async function loadDecks() {
+            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").where("deleted","==",false).get();
             const list = document.getElementById('deck-list');
-            list.innerHTML = "読み込み中...";
-            try {
-                const snap = await db.collection("users").doc(auth.currentUser.uid)
-                                   .collection("decks")
-                                   .where("deleted","==",false)
-                                   .orderBy("createdAt", "desc")
-                                   .get();
-                list.innerHTML = "";
-                if(snap.empty) list.innerHTML = "<p style='color:#999;'>まだジャンルがありません</p>";
-                snap.forEach(doc => {
-                    const div = document.createElement('div');
-                    div.className = "deck-item";
-                    div.innerText = "📂 " + doc.data().name;
-                    list.appendChild(div);
-                });
-            } catch (e) {
-                list.innerHTML = "エラー: " + e.message;
-            }
-        }
-
-        // ログアウト
-        function handleLogout() {
-            auth.signOut().then(() => {
-                location.reload();
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const div = document.createElement('div');
+                div.style = "background:#f9f9f9; padding:15px; margin-bottom:10px; border-radius:10px; text-align:left;";
+                div.innerText = "📂 " + doc.data().name;
+                list.appendChild(div);
             });
         }
+
+        function handleLogout() { auth.signOut().then(() => location.reload()); }
     </script>
 </body>
 </html>
