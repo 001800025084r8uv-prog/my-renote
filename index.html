@@ -5,68 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Re:note</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #fff; }
-        .header { background: linear-gradient(#ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        body { font-family: sans-serif; margin: 0; background: #fff; color: #333; }
+        .header { background: linear-gradient(#ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; }
         .container { padding: 20px; text-align: center; }
         .hidden { display: none; }
-        input { display: block; width: 80%; margin: 10px auto; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        .main-btn { padding: 10px 20px; background: #6699cc; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-        .del-btn { background: #ff4444; padding: 5px 10px; font-size: 12px; }
-        
-        /* リストの見た目 */
-        .item-row { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px; margin-bottom: 5px; border-radius: 5px; border: 1px solid #ddd; }
-        
-        /* カードの見た目 */
-        .card-box { border: 2px solid #ff9933; border-radius: 10px; height: 150px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 20px 0; background: #fffcf5; cursor: pointer; position: relative; }
-        .trash-link { color: #999; text-decoration: underline; font-size: 12px; cursor: pointer; display: block; margin-top: 20px; }
+        input { display: block; width: 85%; margin: 10px auto; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        .main-btn { padding: 12px 24px; background: #6699cc; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 16px; width: 80%; }
+        .del-btn { background: #ff4444; width: auto; padding: 5px 10px; font-size: 12px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 12px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #ddd; }
+        .card-box { border: 3px solid #ff9933; border-radius: 15px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 20px 0; background: #fffcf5; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
+        .trash-link { color: #888; text-decoration: underline; font-size: 14px; margin-top: 30px; display: block; }
+        .loading { color: #ff9933; font-weight: bold; margin-top: 50px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="font-weight:bold; font-size:20px;">My Re:note</div>
-        <div onclick="location.reload()" style="cursor:pointer;">🏠</div>
+        <div>My Re:note</div>
+        <div onclick="location.reload()" style="cursor:pointer; font-size:24px;">🏠</div>
     </div>
 
-    <div id="auth-screen" class="container">
-        <h2>ログイン</h2>
+    <div id="loading-screen" class="container">
+        <p class="loading">アプリを起動中...</p>
+    </div>
+
+    <div id="auth-screen" class="container hidden">
+        <h2>ログイン / 新規登録</h2>
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pass" placeholder="パスワード">
         <button class="main-btn" onclick="login()">ログイン</button>
-        <p style="font-size:12px; color:blue;" onclick="register()">はじめての方（新規登録）</p>
+        <button class="main-btn" style="background:#66cc99;" onclick="register()">新規登録</button>
+        <p style="font-size:12px; color:#666; margin-top:10px;">※新規登録時は名前を入力してください</p>
+        <input type="text" id="reg-name" placeholder="（新規用）ユーザー名">
     </div>
 
     <div id="home-screen" class="container hidden">
         <h3>ようこそ、<span id="u-name"></span>さん</h3>
-        <button class="main-btn" style="width:200px; height:60px;" onclick="showScreen('deck')">暗記カード</button>
+        <button class="main-btn" style="height:80px; font-size:20px; background:#ff9933;" onclick="showScreen('deck')">📖 暗記カード</button>
+        <br><br>
+        <button class="main-btn" style="background:#999;" onclick="logout()">ログアウト</button>
     </div>
 
     <div id="deck-screen" class="container hidden">
         <h2>暗記カード</h2>
-        <input type="text" id="new-deck" placeholder="新しいジャンル（例：英単語）">
+        <input type="text" id="new-deck" placeholder="ジャンル名（例：歴史）">
         <button class="main-btn" onclick="addDeck()">ジャンル作成</button>
         <div id="deck-list"></div>
-        <span class="trash-link" onclick="showScreen('trash')">🗑 ゴミ箱を見る</span>
+        <span class="trash-link" onclick="showScreen('trash')">🗑 ゴミ箱（復元）</span>
+        <button class="main-btn" style="background:#999; margin-top:20px;" onclick="showScreen('home')">戻る</button>
     </div>
 
     <div id="card-screen" class="container hidden">
         <h2 id="current-deck-name">学習</h2>
-        <div class="card-box" id="flashcard" onclick="flip()">
-            <div id="card-text">タップして開始</div>
+        <div class="card-box" onclick="flip()">
+            <div id="card-text">カードをタップ</div>
         </div>
-        <p style="font-size:12px;">タップでめくる / スワイプ（未実装）</p>
-        <hr>
-        <h4>カード追加</h4>
         <input type="text" id="word" placeholder="表（語句）">
         <input type="text" id="mean" placeholder="裏（意味）">
-        <button class="main-btn" onclick="addCard()">追加</button>
+        <button class="main-btn" onclick="addCard()">カードを追加</button>
         <div id="card-list" style="text-align:left; margin-top:20px;"></div>
+        <button class="main-btn" style="background:#999;" onclick="showScreen('deck')">ジャンル一覧へ</button>
     </div>
 
     <div id="trash-screen" class="container hidden">
-        <h2>ゴミ箱（30日後に消去）</h2>
+        <h2>ゴミ箱</h2>
+        <p style="font-size:12px;">30日以内に復元可能です</p>
         <div id="trash-list"></div>
-        <button class="main-btn" style="background:#999;" onclick="showScreen('deck')">戻る</button>
+        <button class="main-btn" onclick="showScreen('deck')">戻る</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -88,41 +93,54 @@
 
         let curDeckId = "";
         let isFlipped = false;
-        let currentCardData = { word: "", mean: "" };
+        let currentCards = [];
+        let cardIdx = 0;
+
+        // ★ ログイン状態を自動監視する「心臓部」
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const doc = await db.collection("users").doc(user.uid).get();
+                if (doc.exists) {
+                    document.getElementById('u-name').innerText = doc.data().username;
+                    showScreen('home');
+                }
+            } else {
+                showScreen('auth');
+            }
+        });
 
         function showScreen(id) {
-            ['auth','home','deck','card','trash'].forEach(s => document.getElementById(s+'-screen').classList.add('hidden'));
+            ['loading','auth','home','deck','card','trash'].forEach(s => document.getElementById(s+'-screen').classList.add('hidden'));
             document.getElementById(id+'-screen').classList.remove('hidden');
             if(id === 'deck') loadDecks();
             if(id === 'trash') loadTrash();
         }
 
         async function login() {
-            try {
-                const user = await auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value);
-                const doc = await db.collection("users").doc(user.user.uid).get();
-                document.getElementById('u-name').innerText = doc.data().username;
-                showScreen('home');
-            } catch (e) { alert("ログイン失敗"); }
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("ログイン失敗: パスワード等を確認してください"); }
         }
 
         async function register() {
-            const email = prompt("登録するメールアドレス");
-            const pass = prompt("パスワード（6文字以上）");
-            const name = prompt("ユーザーネーム");
-            if(!email || !pass || !name) return;
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const name = document.getElementById('reg-name').value;
+            if(!name) return alert("ユーザー名を入力してください");
             try {
                 const res = await auth.createUserWithEmailAndPassword(email, pass);
                 await db.collection("users").doc(res.user.uid).set({ username: name, email: email });
-                alert("登録完了！再度ログインしてください");
-            } catch (e) { alert(e.message); }
+                alert("登録成功！");
+            } catch (e) { alert("登録失敗: " + e.message); }
         }
 
-        // --- ジャンル管理 ---
+        function logout() { auth.signOut(); }
+
+        // --- ジャンル ---
         async function addDeck() {
             const name = document.getElementById('new-deck').value;
             if(!name) return;
-            await db.collection("users").doc(auth.currentUser.uid).collection("decks").add({ name: name, deleted: false });
+            await db.collection("users").doc(auth.currentUser.uid).collection("decks").add({ name: name, deleted: false, createdAt: new Date() });
             document.getElementById('new-deck').value = "";
             loadDecks();
         }
@@ -134,81 +152,3 @@
             list.innerHTML = "";
             snap.forEach(doc => {
                 const div = document.createElement('div');
-                div.className = "item-row";
-                div.innerHTML = `<span onclick="openDeck('${doc.id}', '${doc.data().name}')" style="cursor:pointer; flex:1;">📂 ${doc.data().name}</span>
-                                 <button class="main-btn del-btn" onclick="trashDeck('${doc.id}')">削除</button>`;
-                list.appendChild(div);
-            });
-        }
-
-        async function trashDeck(id) {
-            if(!confirm("ゴミ箱に移動しますか？")) return;
-            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(id).update({ deleted: true, deletedAt: new Date() });
-            loadDecks();
-        }
-
-        // --- ゴミ箱 ---
-        async function loadTrash() {
-            const list = document.getElementById('trash-list');
-            list.innerHTML = "";
-            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").where("deleted", "==", true).get();
-            snap.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = "item-row";
-                div.innerHTML = `<span>${doc.data().name}</span>
-                                 <button class="main-btn" style="background:green; padding:5px;" onclick="restoreDeck('${doc.id}')">復元</button>`;
-                list.appendChild(div);
-            });
-        }
-
-        async function restoreDeck(id) {
-            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(id).update({ deleted: false });
-            loadTrash();
-        }
-
-        // --- カード管理 ---
-        function openDeck(id, name) {
-            curDeckId = id;
-            document.getElementById('current-deck-name').innerText = name;
-            showScreen('card');
-            loadCards();
-        }
-
-        async function addCard() {
-            const word = document.getElementById('word').value;
-            const mean = document.getElementById('mean').value;
-            if(!word || !mean) return;
-            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").add({ word, mean });
-            document.getElementById('word').value = "";
-            document.getElementById('mean').value = "";
-            loadCards();
-        }
-
-        async function loadCards() {
-            const list = document.getElementById('card-list');
-            list.innerHTML = "";
-            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").get();
-            snap.forEach(doc => {
-                const div = document.createElement('div');
-                div.className = "item-row";
-                div.innerHTML = `<span>${doc.data().word} : ${doc.data().mean}</span>
-                                 <button class="main-btn del-btn" onclick="deleteCard('${doc.id}')">消去</button>`;
-                list.appendChild(div);
-                currentCardData = doc.data(); // 表示用
-            });
-            document.getElementById('card-text').innerText = snap.empty ? "カードなし" : currentCardData.word;
-        }
-
-        async function deleteCard(id) {
-            await db.collection("users").doc(auth.currentUser.uid).collection("decks").doc(curDeckId).collection("cards").doc(id).delete();
-            loadCards();
-        }
-
-        function flip() {
-            isFlipped = !isFlipped;
-            document.getElementById('card-text').innerText = isFlipped ? currentCardData.mean : currentCardData.word;
-            document.getElementById('flashcard').style.background = isFlipped ? "#fff0f0" : "#fffcf5";
-        }
-    </script>
-</body>
-</html>
