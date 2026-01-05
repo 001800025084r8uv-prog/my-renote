@@ -2,167 +2,130 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Re:note</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Arial&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #007AFF;
-            --bg-color: #F2F2F7;
-            --card-bg: #FFFFFF;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 85%;
-            max-width: 350px;
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h1 { font-size: 22px; margin-bottom: 20px; color: #333; }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 15px;
-        }
-        .sub-link {
-            color: var(--primary-color);
-            margin-top: 15px;
-            display: block;
-            text-decoration: none;
-            font-size: 14px;
-        }
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #fff; overflow-x: hidden; }
+        .header { background: linear-gradient(to bottom, #ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom-left-radius: 50% 20px; border-bottom-right-radius: 50% 20px; position: relative; }
+        .logo { color: white; font-size: 24px; font-weight: bold; }
+        .menu-btn { width: 40px; cursor: pointer; transition: 0.3s; }
+        .side-menu { position: fixed; top: 0; right: -250px; width: 200px; height: 100%; background: rgba(0, 0, 0, 0.8); color: white; padding: 20px; transition: 0.3s; z-index: 1000; }
+        .side-menu.open { right: 0; }
+        .side-menu ul { list-style: none; padding: 0; margin-top: 50px; }
+        .side-menu li { padding: 15px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3); cursor: pointer; }
+        .container { padding: 20px; text-align: center; }
+        .welcome-msg { font-size: 20px; margin: 20px 0; text-align: left; }
+        .remind-box { border: 2px solid #666; border-radius: 10px; padding: 10px; margin-bottom: 30px; min-height: 80px; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .button-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; background: #f0f0f0; padding: 15px; border: 1px solid #999; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .nav-btn { background: #ffcc99; border: 2px solid #ff9933; border-radius: 10px; padding: 10px 15px; font-size: 14px; cursor: pointer; flex: 1 1 100px; }
+        input { display: block; width: 80%; margin: 10px auto; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button.main-btn { padding: 10px 20px; background: #6699cc; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .hidden { display: none; }
-        .info-box {
-            text-align: left;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="login-screen">
-        <h1>My Re:note</h1>
+    <div class="header">
+        <div class="logo">My Re:note</div>
+        <img src="https://cdn-icons-png.flaticon.com/512/588/588395.png" class="menu-btn" onclick="toggleMenu()" alt="Menu">
+    </div>
+
+    <div id="side-menu" class="side-menu">
+        <div onclick="toggleMenu()" style="text-align:right; cursor:pointer;">× 閉じる</div>
+        <ul>
+            <li onclick="location.reload()">新規登録・ログイン</li>
+            <li onclick="showScreen('home')">ホーム</li>
+            <li>暗記カード</li>
+            <li>まとめノート</li>
+            <li>リマインドカレンダー</li>
+            <li>確認テスト</li>
+            <li>目標カレンダー</li>
+            <li>アカウント設定</li>
+        </ul>
+    </div>
+
+    <div id="auth-screen">
+        <h2>ログイン / 新規登録</h2>
+        <input type="text" id="reg-name" placeholder="ユーザーネーム">
+        <input type="email" id="reg-email" placeholder="メールアドレス">
+        <input type="password" id="reg-pass" placeholder="パスワード">
+        <button class="main-btn" onclick="register()">新規登録</button>
+        <hr>
         <input type="email" id="login-email" placeholder="メールアドレス">
         <input type="password" id="login-pass" placeholder="パスワード">
-        <button onclick="login()">ログイン</button>
-        <a href="#" class="sub-link" onclick="showScreen('signup-screen')">新規登録はこちら</a>
+        <button class="main-btn" style="background:#66cc99;" onclick="login()">ログイン</button>
     </div>
 
-    <div id="signup-screen" class="hidden">
-        <h1>新規登録</h1>
-        <input type="text" id="signup-name" placeholder="ユーザーネーム">
-        <input type="email" id="signup-email" placeholder="メールアドレス">
-        <input type="password" id="signup-pass" placeholder="パスワード">
-        <button onclick="signup()">登録する</button>
-        <a href="#" class="sub-link" onclick="showScreen('login-screen')">戻る</a>
+    <div id="home-screen" class="container hidden">
+        <div class="welcome-msg">ようこそ、<span id="display-name">【ユーザー名】</span>さん</div>
+        <div class="remind-box">
+            <div style="font-size:12px; border-bottom:1px solid #ccc;">今日は何を学びますか？</div>
+            <p id="remind-text">通知なし</p>
+        </div>
+        <h3>あなたのノート</h3>
+        <div class="button-grid">
+            <button class="nav-btn">暗記カード</button>
+            <button class="nav-btn">まとめノート</button>
+            <button class="nav-btn">リマインド<br>カレンダー</button>
+            <button class="nav-btn">確認テスト</button>
+            <button class="nav-btn">目標カレンダー</button>
+        </div>
     </div>
 
-    <div id="complete-screen" class="hidden">
-        <h1>登録完了！</h1>
-        <p>以下の情報を忘れないようメモしてください。</p>
-        <div id="user-info-display" class="info-box"></div>
-        <button onclick="location.reload()">ログイン画面へ戻る</button>
-    </div>
-</div>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
-<script>
-    // あなた専用のFirebase設定を組み込み済み！
-    const firebaseConfig = {
-        apiKey: "AIzaSyBG00lRjKoMTi-wmqpIAqazkVRsGOe_BLI",
-        authDomain: "my-re-note.firebaseapp.com",
-        projectId: "my-re-note",
-        storageBucket: "my-re-note.firebasestorage.app",
-        messagingSenderId: "458311875948",
-        appId: "1:458311875948:web:0718482af237053df74749"
-    };
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqOQcttYS7zpy2aMbRWVlDYVUQb5S28XM",
+            authDomain: "re-note-f83a1.firebaseapp.com",
+            projectId: "re-note-f83a1",
+            storageBucket: "re-note-f83a1.firebasestorage.app",
+            messagingSenderId: "296038093171",
+            appId: "1:296038093171:web:e5a31640dbbd23d9397506"
+        };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-    function showScreen(screenId) {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('signup-screen').classList.add('hidden');
-        document.getElementById('complete-screen').classList.add('hidden');
-        document.getElementById(screenId).classList.remove('hidden');
-    }
-
-    async function login() {
-        const email = document.getElementById('login-email').value;
-        const pass = document.getElementById('login-pass').value;
-        try {
-            await auth.signInWithEmailAndPassword(email, pass);
-            alert("ログイン成功！ホーム画面は開発中です。");
-        } catch (e) {
-            alert("ログイン失敗: " + e.message);
+        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
+        function showScreen(screenId) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById(screenId + '-screen').classList.remove('hidden');
+            if(screenId === 'home') toggleMenu();
         }
-    }
 
-    async function signup() {
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const pass = document.getElementById('signup-pass').value;
-        const idNum = Math.floor(Math.random() * 900000) + 100000;
-
-        try {
-            // 同一メールアドレスのアカウント数をチェック（ドキュメント仕様）
-            const snapshot = await db.collection("users").where("email", "==", email).get();
-            if (snapshot.size >= 3) {
-                alert("このアドレスでは最大3つまでしか登録できません。");
-                return;
-            }
-
-            const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
-            await db.collection("users").doc(userCredential.user.uid).set({
-                username: name,
-                email: email,
-                idNumber: idNum
-            });
-
-            document.getElementById('user-info-display').innerHTML = `
-                <b>ユーザー名:</b> ${name}<br>
-                <b>メール:</b> ${email}<br>
-                <b>識別番号:</b> ${idNum}
-            `;
-            showScreen('complete-screen');
-        } catch (e) {
-            alert("エラー: " + e.message);
+        async function register() {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+                const user = userCredential.user;
+                const idNum = "AB" + Math.floor(100 + Math.random() * 900);
+                await db.collection("users").doc(user.uid).set({ username: name, email: email, idNumber: idNum });
+                alert("登録完了！識別番号は " + idNum + " です。");
+                location.reload();
+            } catch (error) { alert("エラー: " + error.message); }
         }
-    }
-</script>
+
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, pass);
+                const user = userCredential.user;
+                const doc = await db.collection("users").doc(user.uid).get();
+                if (doc.exists) {
+                    document.getElementById('display-name').innerText = doc.data().username;
+                    showScreen('home');
+                }
+            } catch (error) { alert("ログイン失敗: " + error.message); }
+        }
+    </script>
 </body>
-</html> 
+</html>
