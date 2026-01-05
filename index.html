@@ -9,40 +9,38 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* iPhone風のモダンなデザイン */
         :root {
-            --primary-color: #007AFF; /* Appleのブルー */
+            --primary-color: #007AFF;
             --bg-color: #F2F2F7;
             --card-bg: #FFFFFF;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-color);
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
         }
         .container {
-            width: 90%;
-            max-width: 400px;
+            width: 85%;
+            max-width: 350px;
             background: var(--card-bg);
-            padding: 30px;
+            padding: 25px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
         }
-        h1 { font-size: 24px; margin-bottom: 20px; color: #333; }
+        h1 { font-size: 22px; margin-bottom: 20px; color: #333; }
         input {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            margin: 8px 0;
             border: 1px solid #ddd;
             border-radius: 10px;
             box-sizing: border-box;
-            font-size: 16px; /* iPhoneでズームされないサイズ */
+            font-size: 16px;
         }
         button {
             width: 100%;
@@ -53,8 +51,7 @@
             border-radius: 12px;
             font-size: 16px;
             font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         .sub-link {
             color: var(--primary-color);
@@ -64,11 +61,19 @@
             font-size: 14px;
         }
         .hidden { display: none; }
+        .info-box {
+            text-align: left;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container" id="app">
+<div class="container">
     <div id="login-screen">
         <h1>My Re:note</h1>
         <input type="email" id="login-email" placeholder="メールアドレス">
@@ -82,20 +87,20 @@
         <input type="text" id="signup-name" placeholder="ユーザーネーム">
         <input type="email" id="signup-email" placeholder="メールアドレス">
         <input type="password" id="signup-pass" placeholder="パスワード">
-        <button onclick="signup()">次へ</button>
+        <button onclick="signup()">登録する</button>
         <a href="#" class="sub-link" onclick="showScreen('login-screen')">戻る</a>
     </div>
 
     <div id="complete-screen" class="hidden">
         <h1>登録完了！</h1>
-        <p>今後のログインに必要ですので、記録してください。</p>
-        <div id="user-info-display" style="text-align: left; background: #f9f9f9; padding: 10px; border-radius: 10px;"></div>
-        <button onclick="goToHome()">ホーム画面へ</button>
+        <p>以下の情報を忘れないようメモしてください。</p>
+        <div id="user-info-display" class="info-box"></div>
+        <button onclick="location.reload()">ログイン画面へ戻る</button>
     </div>
 </div>
 
 <script>
-    // あなたが送ってくれた設定をここに反映！
+    // あなた専用のFirebase設定を組み込み済み！
     const firebaseConfig = {
         apiKey: "AIzaSyBG00lRjKoMTi-wmqpIAqazkVRsGOe_BLI",
         authDomain: "my-re-note.firebaseapp.com",
@@ -104,6 +109,7 @@
         messagingSenderId: "458311875948",
         appId: "1:458311875948:web:0718482af237053df74749"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -115,30 +121,28 @@
         document.getElementById(screenId).classList.remove('hidden');
     }
 
-    // ログイン機能
     async function login() {
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-pass').value;
         try {
             await auth.signInWithEmailAndPassword(email, pass);
-            alert("ログイン成功！ホームへ移動します（次回の実装で作ります）");
+            alert("ログイン成功！ホーム画面は開発中です。");
         } catch (e) {
-            alert("エラー: " + e.message);
+            alert("ログイン失敗: " + e.message);
         }
     }
 
-    // 新規登録機能 (ドキュメントの仕様通り)
     async function signup() {
         const name = document.getElementById('signup-name').value;
         const email = document.getElementById('signup-email').value;
         const pass = document.getElementById('signup-pass').value;
-        const idNum = Math.floor(Math.random() * 900000) + 100000; // 6桁の識別番号
+        const idNum = Math.floor(Math.random() * 900000) + 100000;
 
         try {
-            // 同一メールアドレスのアカウント数をチェック
+            // 同一メールアドレスのアカウント数をチェック（ドキュメント仕様）
             const snapshot = await db.collection("users").where("email", "==", email).get();
             if (snapshot.size >= 3) {
-                alert("アカウント数が最大(3つ)です。これ以上登録できません。");
+                alert("このアドレスでは最大3つまでしか登録できません。");
                 return;
             }
 
@@ -158,10 +162,6 @@
         } catch (e) {
             alert("エラー: " + e.message);
         }
-    }
-
-    function goToHome() {
-        alert("ここから先（ホーム画面）は、次のステップで一緒に作りましょう！");
     }
 </script>
 </body>
