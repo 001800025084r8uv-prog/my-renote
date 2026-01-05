@@ -5,30 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Re:note</title>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #fff; color: #333; }
-        .header { background: linear-gradient(#ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; }
+        body { font-family: sans-serif; margin: 0; background: #fff; color: #333; overflow-x: hidden; }
+        /* ヘッダーデザイン復活 */
+        .header { background: linear-gradient(to bottom, #ff9933, #ffcc99); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; border-bottom-left-radius: 50% 20px; border-bottom-right-radius: 50% 20px; }
+        .logo { font-size: 24px; font-weight: bold; }
+        .menu-btn { width: 35px; cursor: pointer; filter: brightness(0) invert(1); }
+        
+        /* サイドメニュー */
+        .side-menu { position: fixed; top: 0; right: -250px; width: 200px; height: 100%; background: rgba(0, 0, 0, 0.85); color: white; padding: 20px; transition: 0.3s; z-index: 1000; }
+        .side-menu.open { right: 0; }
+        .side-menu ul { list-style: none; padding: 0; margin-top: 50px; }
+        .side-menu li { padding: 15px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; }
+
         .container { padding: 20px; text-align: center; }
         .hidden { display: none; }
         input { display: block; width: 85%; margin: 10px auto; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-        .main-btn { padding: 12px 24px; background: #6699cc; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 16px; width: 80%; }
-        .del-btn { background: #ff4444; width: auto; padding: 5px 10px; font-size: 12px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 12px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #ddd; }
-        .card-box { border: 3px solid #ff9933; border-radius: 15px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 20px 0; background: #fffcf5; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; }
+        .main-btn { padding: 12px 24px; background: #6699cc; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 16px; width: 85%; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 暗記カードデザイン */
+        .item-row { display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-box { border: 3px solid #ff9933; border-radius: 15px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 20px auto; background: #fffcf5; width: 90%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .trash-link { color: #888; text-decoration: underline; font-size: 14px; margin-top: 30px; display: block; }
-        .loading { color: #ff9933; font-weight: bold; margin-top: 50px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div>My Re:note</div>
-        <div onclick="location.reload()" style="cursor:pointer; font-size:24px;">🏠</div>
+        <div class="logo">My Re:note</div>
+        <img src="https://cdn-icons-png.flaticon.com/512/588/588395.png" class="menu-btn" onclick="toggleMenu()" alt="Menu">
+    </div>
+
+    <div id="side-menu" class="side-menu">
+        <div onclick="toggleMenu()" style="text-align:right; cursor:pointer; font-size:24px;">×</div>
+        <ul>
+            <li onclick="showScreen('home')">🏠 ホーム</li>
+            <li onclick="showScreen('deck')">📖 暗記カード</li>
+            <li onclick="logout()" style="color:#ff8888;">🚪 ログアウト</li>
+        </ul>
     </div>
 
     <div id="loading-screen" class="container">
-        <p class="loading">アプリを起動中...</p>
-        <p style="font-size:12px; color:#999;">※5秒以上動かない場合は<br>下のボタンを押してください</p>
-        <button class="main-btn" style="background:#ccc; width:auto;" onclick="showScreen('auth')">ログイン画面へ</button>
+        <p style="margin-top:100px; color:#ff9933; font-weight:bold;">アプリを起動中...</p>
     </div>
 
     <div id="auth-screen" class="container hidden">
@@ -36,36 +53,41 @@
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pass" placeholder="パスワード">
         <button class="main-btn" onclick="login()">ログイン</button>
-        <button class="main-btn" style="background:#66cc99;" onclick="register()">新規登録</button>
-        <input type="text" id="reg-name" placeholder="（新規用）ユーザー名" style="margin-top:20px;">
+        <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+        <input type="text" id="reg-name" placeholder="（新規用）ユーザー名">
+        <button class="main-btn" style="background:#66cc99;" onclick="register()">新しくアカウントを作る</button>
     </div>
 
     <div id="home-screen" class="container hidden">
-        <h3>ようこそ、<span id="u-name"></span>さん</h3>
-        <button class="main-btn" style="height:80px; font-size:20px; background:#ff9933;" onclick="showScreen('deck')">📖 暗記カード</button>
-        <br><br>
-        <button class="main-btn" style="background:#999;" onclick="logout()">ログアウト</button>
+        <h3 style="text-align:left;">ようこそ、<span id="u-name"></span>さん</h3>
+        <div style="background:#f0f0f0; padding:20px; border-radius:15px; margin-bottom:20px;">
+            <p style="font-size:14px; color:#666;">今日の学習予定</p>
+            <p>まだ予定はありません</p>
+        </div>
+        <button class="main-btn" style="height:100px; font-size:20px; background:#ff9933;" onclick="showScreen('deck')">暗記カードをはじめる</button>
     </div>
 
     <div id="deck-screen" class="container hidden">
-        <h2>暗記カード</h2>
-        <input type="text" id="new-deck" placeholder="ジャンル名（例：歴史）">
-        <button class="main-btn" onclick="addDeck()">ジャンル作成</button>
-        <div id="deck-list"></div>
+        <h2>📖 暗記カード</h2>
+        <input type="text" id="new-deck" placeholder="ジャンル名（例：日本史）">
+        <button class="main-btn" onclick="addDeck()">＋ ジャンルを作成</button>
+        <div id="deck-list" style="margin-top:20px;"></div>
         <span class="trash-link" onclick="showScreen('trash')">🗑 ゴミ箱（復元）</span>
-        <button class="main-btn" style="background:#999; margin-top:20px;" onclick="showScreen('home')">戻る</button>
     </div>
 
     <div id="card-screen" class="container hidden">
         <h2 id="current-deck-name">学習</h2>
         <div class="card-box" onclick="flip()">
-            <div id="card-text">カードをタップ</div>
+            <div id="card-text">タップして開始</div>
         </div>
-        <input type="text" id="word" placeholder="表（語句）">
-        <input type="text" id="mean" placeholder="裏（意味）">
-        <button class="main-btn" onclick="addCard()">カードを追加</button>
-        <div id="card-list" style="text-align:left; margin-top:20px;"></div>
-        <button class="main-btn" style="background:#999;" onclick="showScreen('deck')">ジャンル一覧へ</button>
+        <div style="background:#f9f9f9; padding:15px; border-radius:10px;">
+            <h4>カードを追加</h4>
+            <input type="text" id="word" placeholder="表（語句）">
+            <input type="text" id="mean" placeholder="裏（意味）">
+            <button class="main-btn" onclick="addCard()">追加</button>
+        </div>
+        <div id="card-list" style="margin-top:20px; text-align:left;"></div>
+        <button class="main-btn" style="background:#999;" onclick="showScreen('deck')">一覧に戻る</button>
     </div>
 
     <div id="trash-screen" class="container hidden">
@@ -96,37 +118,36 @@
         let currentCards = [];
         let cardIdx = 0;
 
-        // ★ 安全装置：5秒経っても動かなければ強制的にログイン画面へ
-        const safetyTimer = setTimeout(() => {
-            if(!document.getElementById('loading-screen').classList.contains('hidden')) {
-                showScreen('auth');
-            }
-        }, 5000);
+        // 安全装置
+        const safety = setTimeout(() => { if(!document.getElementById('loading-screen').classList.contains('hidden')) showScreen('auth'); }, 5000);
 
         auth.onAuthStateChanged(async (user) => {
-            clearTimeout(safetyTimer); // 正常に動いたらタイマー解除
-            try {
-                if (user) {
-                    const doc = await db.collection("users").doc(user.uid).get();
-                    if (doc.exists) {
-                        document.getElementById('u-name').innerText = doc.data().username;
-                        showScreen('home');
-                    } else { showScreen('auth'); }
+            clearTimeout(safety);
+            if (user) {
+                const doc = await db.collection("users").doc(user.uid).get();
+                if (doc.exists) {
+                    document.getElementById('u-name').innerText = doc.data().username;
+                    showScreen('home');
                 } else { showScreen('auth'); }
-            } catch (e) { showScreen('auth'); }
+            } else { showScreen('auth'); }
         });
+
+        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
 
         function showScreen(id) {
             ['loading','auth','home','deck','card','trash'].forEach(s => document.getElementById(s+'-screen').classList.add('hidden'));
             document.getElementById(id+'-screen').classList.remove('hidden');
             if(id === 'deck') loadDecks();
             if(id === 'trash') loadTrash();
+            const menu = document.getElementById('side-menu');
+            if(menu.classList.contains('open')) menu.classList.remove('open');
         }
 
         async function login() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("ログイン失敗"); }
+            try { await auth.signInWithEmailAndPassword(email, pass); } 
+            catch (e) { alert("ログイン失敗: " + e.message); }
         }
 
         async function register() {
@@ -137,12 +158,13 @@
             try {
                 const res = await auth.createUserWithEmailAndPassword(email, pass);
                 await db.collection("users").doc(res.user.uid).set({ username: name, email: email });
-                alert("登録成功！");
-            } catch (e) { alert("登録失敗"); }
+                alert("登録しました！");
+            } catch (e) { alert("登録失敗: " + e.message); }
         }
 
         function logout() { auth.signOut().then(() => location.reload()); }
 
+        // カテゴリー
         async function addDeck() {
             const name = document.getElementById('new-deck').value;
             if(!name) return;
@@ -153,14 +175,14 @@
 
         async function loadDecks() {
             const list = document.getElementById('deck-list');
-            list.innerHTML = "読み込み中...";
-            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").where("deleted", "==", false).get();
+            list.innerHTML = "読込中...";
+            const snap = await db.collection("users").doc(auth.currentUser.uid).collection("decks").where("deleted", "==", false).orderBy("createdAt", "desc").get();
             list.innerHTML = "";
             snap.forEach(doc => {
                 const div = document.createElement('div');
                 div.className = "item-row";
-                div.innerHTML = `<span onclick="openDeck('${doc.id}', '${doc.data().name}')" style="flex:1; text-align:left;">📂 ${doc.data().name}</span>
-                                 <button class="main-btn del-btn" onclick="trashDeck('${doc.id}')">削除</button>`;
+                div.innerHTML = `<span onclick="openDeck('${doc.id}', '${doc.data().name}')" style="flex:1; text-align:left; font-weight:bold;">📂 ${doc.data().name}</span>
+                                 <button onclick="trashDeck('${doc.id}')" style="background:#ff4444; color:white; border:none; border-radius:5px; padding:5px 10px;">削除</button>`;
                 list.appendChild(div);
             });
         }
@@ -177,8 +199,7 @@
             snap.forEach(doc => {
                 const div = document.createElement('div');
                 div.className = "item-row";
-                div.innerHTML = `<span>${doc.data().name}</span>
-                                 <button class="main-btn" style="background:green; width:auto; padding:5px;" onclick="restoreDeck('${doc.id}')">復元</button>`;
+                div.innerHTML = `<span>${doc.data().name}</span><button onclick="restoreDeck('${doc.id}')" style="background:green; color:white; border:none; border-radius:5px; padding:5px 10px;">復元</button>`;
                 list.appendChild(div);
             });
         }
@@ -188,6 +209,7 @@
             loadTrash();
         }
 
+        // カード
         function openDeck(id, name) {
             curDeckId = id;
             document.getElementById('current-deck-name').innerText = name;
@@ -215,7 +237,7 @@
                 const div = document.createElement('div');
                 div.className = "item-row";
                 div.innerHTML = `<span style="font-size:14px;">${doc.data().word} / ${doc.data().mean}</span>
-                                 <button class="main-btn del-btn" onclick="deleteCard('${doc.id}')">消去</button>`;
+                                 <button onclick="deleteCard('${doc.id}')" style="background:#ff4444; color:white; border:none; border-radius:5px; padding:5px 10px;">消去</button>`;
                 list.appendChild(div);
             });
             cardIdx = 0;
@@ -230,7 +252,8 @@
         function updateCardDisplay() {
             isFlipped = false;
             const display = document.getElementById('card-text');
-            if(currentCards.length > 0) { display.innerText = currentCards[cardIdx].word; } else { display.innerText = "カードなし"; }
+            if(currentCards.length > 0) { display.innerText = currentCards[cardIdx].word; } 
+            else { display.innerText = "カードを追加してね"; }
         }
 
         function flip() {
